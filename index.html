@@ -3,15 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSM Blog Site</title>
+<title>Messenger Chat - CSM Mohasin Alam</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  * {margin:0;padding:0;box-sizing:border-box;}
+  body {
+    font-family:'Poppins',sans-serif;
+    background:#0e0e0e;
+    color:#fff;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header {
+    background:#1a1a1a;
+    padding:10px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.3);
+  }
+
+  header h1 {font-size:20px;color:#00aaff;}
+  #logoutBtn {
+    background:#ff4444;
+    border:none;
+    color:#fff;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+
+  .chat-container {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  .messages {
+    flex:1;
+    overflow-y:auto;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .msg {
+    margin:6px 0;
+    padding:8px 12px;
+    border-radius:12px;
+    max-width:80%;
+    word-wrap:break-word;
+    position:relative;
+  }
+
+  .msg .name {
+    font-size:12px;
+    font-weight:600;
+  }
+
+  .msg .text {
+    font-size:15px;
+  }
+
+  .msg .time {
+    font-size:10px;
+    opacity:0.7;
+    text-align:right;
+    margin-top:4px;
+  }
+
+  .admin {background:#007bff;align-self:flex-end;}
+  .user {background:#333;align-self:flex-start;}
+
+  .verified {
+    width:14px;
+    height:14px;
+    vertical-align:middle;
+    margin-left:4px;
+    border-radius:50%;
+  }
+
+  footer {
+    background:#1a1a1a;
+    padding:10px;
+    display:flex;
+  }
+
+  footer input {
+    flex:1;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    outline:none;
+  }
+
+  footer button {
+    margin-left:10px;
+    background:#00aaff;
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    cursor:pointer;
+    color:#fff;
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Messenger Chat</h1>
+  <button id="logoutBtn">Logout</button>
+</header>
+
+<div class="chat-container">
+  <div class="messages" id="messages"></div>
+  <footer>
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button id="sendBtn">Send</button>
+  </footer>
+</div>
 
 <!-- Firebase -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  // Import Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
-  // 🔥 তোমার Firebase Config
+  // 🔥 Your Firebase Config (Ready)
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
     authDomain: "csm-bolg-site.firebaseapp.com",
@@ -22,182 +148,70 @@
     measurementId: "G-13HVSL6BE4"
   };
 
+  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
   const auth = getAuth(app);
+  const db = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
-  const postsContainer = document.getElementById("posts");
-  const postInput = document.getElementById("postInput");
-  const postButton = document.getElementById("postButton");
-  const loginButton = document.getElementById("loginButton");
-  const logoutButton = document.getElementById("logoutButton");
-  const userNameDisplay = document.getElementById("userName");
+  // ✅ Admin setup
+  const ADMIN_EMAIL = "csmmohasinalam@gmail.com";
+  const VERIFIED_BADGE = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg";
 
-  // 🧠 Admin Email
-  const adminEmail = "csmmohasinalam@gmail.com";
+  const messagesDiv = document.getElementById("messages");
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-  let currentUser = null;
-
-  // 🔹 Login
-  loginButton.onclick = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      currentUser = result.user;
-      renderUser(currentUser);
-    } catch (err) {
-      alert("Login Failed: " + err.message);
-    }
-  };
-
-  // 🔹 Logout
-  logoutButton.onclick = async () => {
-    await signOut(auth);
-  };
-
-  // 🔹 Auth State Change
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUser = user;
-      renderUser(user);
+  // Auto Login
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      signInWithPopup(auth, provider).catch(console.error);
     } else {
-      currentUser = null;
-      userNameDisplay.innerHTML = "👤 Guest (Viewing Mode)";
-      logoutButton.style.display = "none";
-      loginButton.style.display = "inline-block";
+      loadMessages();
     }
-    loadPosts();
   });
 
-  // 🔹 Show User Info
-  function renderUser(user) {
-    const isAdmin = user.email === adminEmail;
-    const name = user.displayName || user.email.split("@")[0];
-    const badge = isAdmin
-      ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" width="20" style="border-radius:50%;margin-left:5px;">`
-      : `<span style="color:#000;">✔️</span>`;
-    userNameDisplay.innerHTML = `${name} ${badge}`;
-    loginButton.style.display = "none";
-    logoutButton.style.display = "inline-block";
+  logoutBtn.onclick = () => signOut(auth);
+
+  async function sendMessage() {
+    const user = auth.currentUser;
+    if (!user || !input.value.trim()) return;
+    await addDoc(collection(db, "messages"), {
+      name: user.displayName,
+      email: user.email,
+      text: input.value,
+      time: serverTimestamp()
+    });
+    input.value = "";
   }
 
-  // 🔹 Add Post
-  postButton.onclick = async () => {
-    if (!currentUser) {
-      alert("Please login to post!");
-      return;
-    }
-    const text = postInput.value.trim();
-    if (!text) return alert("Post cannot be empty!");
+  sendBtn.onclick = sendMessage;
+  input.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
 
-    const name = currentUser.displayName || currentUser.email.split("@")[0];
-    const isAdmin = currentUser.email === adminEmail;
-    const author = isAdmin ? "CSM Mohasin Alam" : name;
+  function loadMessages() {
+    const q = query(collection(db, "messages"), orderBy("time", "asc"));
+    onSnapshot(q, snapshot => {
+      messagesDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const isAdmin = data.email === ADMIN_EMAIL;
 
-    await addDoc(collection(db, "posts"), {
-      text,
-      author,
-      email: currentUser.email,
-      timestamp: serverTimestamp(),
-    });
-
-    postInput.value = "";
-    loadPosts();
-  };
-
-  // 🔹 Load Posts (Newest First)
-  async function loadPosts() {
-    postsContainer.innerHTML = "<p>Loading...</p>";
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    const snapshot = await getDocs(q);
-    postsContainer.innerHTML = "";
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const isAdmin = data.email === adminEmail;
-      const canEdit = currentUser && currentUser.email === adminEmail;
-      const badge = isAdmin
-        ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" width="20" style="border-radius:50%;margin-left:5px;">`
-        : `<span style="color:#000;">✔️</span>`;
-
-      const div = document.createElement("div");
-      div.className = "post";
-      div.innerHTML = `
-        <h3>${data.author} ${badge}</h3>
-        <p>${data.text}</p>
-        ${canEdit
-          ? `<button onclick="editPost('${docSnap.id}', '${data.text}')">✏️ Edit</button>
-             <button onclick="deletePost('${docSnap.id}')">🗑️ Delete</button>`
-          : ""
-        }
-      `;
-      postsContainer.appendChild(div);
+        const div = document.createElement("div");
+        div.className = "msg " + (isAdmin ? "admin" : "user");
+        div.innerHTML = `
+          <div class="name">
+            ${data.name}
+            ${isAdmin ? `<img src="${VERIFIED_BADGE}" class="verified">` : ""}
+          </div>
+          <div class="text">${data.text}</div>
+          <div class="time">${data.time ? new Date(data.time.toDate()).toLocaleTimeString() : ""}</div>
+        `;
+        messagesDiv.appendChild(div);
+      });
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
   }
-
-  // 🔹 Edit Post
-  window.editPost = async (id, oldText) => {
-    const newText = prompt("Edit your post:", oldText);
-    if (newText) {
-      const ref = doc(db, "posts", id);
-      await updateDoc(ref, { text: newText });
-      loadPosts();
-    }
-  };
-
-  // 🔹 Delete Post
-  window.deletePost = async (id) => {
-    if (confirm("Delete this post?")) {
-      await deleteDoc(doc(db, "posts", id));
-      loadPosts();
-    }
-  };
 </script>
-
-<style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: #0a0a0a;
-    color: #fff;
-    text-align: center;
-    padding: 20px;
-  }
-  #userName { font-size: 1.2em; margin-bottom: 15px; }
-  textarea {
-    width: 90%; max-width: 600px;
-    height: 80px;
-    border: none; border-radius: 10px;
-    padding: 10px; margin-top: 10px;
-    font-size: 16px;
-  }
-  button {
-    margin: 10px; padding: 10px 20px;
-    border: none; border-radius: 8px;
-    background: #ff0080; color: #fff;
-    font-weight: 600; cursor: pointer;
-  }
-  button:hover { background: #ff66a3; }
-  .post {
-    background: #111;
-    border-radius: 15px;
-    padding: 15px;
-    margin: 15px auto;
-    width: 90%; max-width: 600px;
-    box-shadow: 0 0 15px #ff0080;
-    text-align: left;
-  }
-</style>
-</head>
-
-<body>
-  <h1>🔥 CSM Blog Site 🔥</h1>
-  <div id="userName">👤 Guest (Viewing Mode)</div>
-  <button id="loginButton">Login with Google</button>
-  <button id="logoutButton" style="display:none;">Logout</button>
-
-  <textarea id="postInput" placeholder="Write something..."></textarea>
-  <br>
-  <button id="postButton">Post</button>
-
-  <div id="posts"></div>
 </body>
 </html>
