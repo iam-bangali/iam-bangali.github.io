@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messenger Pro Chat v3</title>
+<title>Messenger Pro Chat v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
-  * {margin:0;padding:0;box-sizing:border-box;}
+  *{margin:0;padding:0;box-sizing:border-box;}
   body {
     font-family:'Poppins',sans-serif;
     background:#fff;
@@ -16,14 +16,8 @@
     flex-direction:column;
     height:100vh;
     overflow:hidden;
-    transition:background 0.4s, color 0.4s;
   }
-
-  body.dark {
-    background:#111;
-    color:#f5f5f5;
-  }
-
+  body.dark {background:#111;color:#f5f5f5;}
   header {
     background:#0084ff;
     color:#fff;
@@ -32,15 +26,7 @@
     justify-content:space-between;
     align-items:center;
   }
-
-  .toggle {
-    background:none;
-    border:none;
-    color:white;
-    font-size:18px;
-    cursor:pointer;
-  }
-
+  .toggle {background:none;border:none;color:white;font-size:18px;cursor:pointer;}
   .chat-box {
     flex:1;
     overflow-y:auto;
@@ -50,11 +36,14 @@
     scroll-behavior:smooth;
   }
 
+  /* 🔹 Message alignment */
   .message {
     display:flex;
     align-items:flex-end;
     margin:6px 0;
   }
+  .left {justify-content:flex-start;}
+  .right {justify-content:flex-end;}
 
   .message img.profile {
     width:35px;
@@ -68,33 +57,24 @@
     padding:10px;
     border-radius:16px;
     word-wrap:break-word;
-    position:relative;
   }
 
-  .sent .bubble {
+  /* 🔹 Admin message (Right Side - Blue) */
+  .admin .bubble {
     background:#0084ff;
     color:#fff;
     border-bottom-right-radius:4px;
-    align-self:flex-end;
   }
 
-  .received .bubble {
+  /* 🔹 User message (Left Side - Gray) */
+  .user .bubble {
     background:#e4e6eb;
     color:#000;
     border-bottom-left-radius:4px;
   }
 
-  body.dark .received .bubble { background:#333; color:#f5f5f5; }
-  body.dark .sent .bubble { background:#0064d1; }
-
-  .seen-status {
-    font-size:11px;
-    color:#777;
-    text-align:right;
-    margin-top:2px;
-  }
-
-  .seen-status .tick { color:#0084ff; }
+  body.dark .user .bubble {background:#333;color:#f5f5f5;}
+  body.dark .admin .bubble {background:#0064d1;}
 
   .verified {
     width:14px;
@@ -102,6 +82,13 @@
     margin-left:4px;
     vertical-align:middle;
     border-radius:50%;
+  }
+
+  .seen-status {
+    font-size:11px;
+    color:#777;
+    text-align:right;
+    margin-top:2px;
   }
 
   footer {
@@ -115,9 +102,7 @@
     left:0;
     right:0;
   }
-
-  body.dark footer { background:#222; }
-
+  body.dark footer {background:#222;}
   footer input {
     flex:1;
     padding:10px;
@@ -126,41 +111,9 @@
     background:#fff;
     outline:none;
   }
-
-  body.dark footer input { background:#333; color:#fff; }
-
-  footer button {
-    background:none;
-    border:none;
-    cursor:pointer;
-  }
-
-  footer img.icon {
-    width:26px;
-    height:26px;
-  }
-
-  .typing-indicator {
-    display:none;
-    font-size:13px;
-    color:#777;
-    margin-left:12px;
-  }
-
-  .typing-indicator span {
-    display:inline-block;
-    width:5px;
-    height:5px;
-    background:#888;
-    border-radius:50%;
-    margin-right:3px;
-    animation: blink 1.2s infinite;
-  }
-
-  @keyframes blink {
-    0%, 80%, 100% {opacity:0;}
-    40% {opacity:1;}
-  }
+  body.dark footer input {background:#333;color:#fff;}
+  footer button {background:none;border:none;cursor:pointer;}
+  footer img.icon {width:26px;height:26px;}
 </style>
 </head>
 <body>
@@ -170,27 +123,17 @@
   <button id="toggleMode" class="toggle">🌙</button>
 </header>
 
-<div id="typingIndicator" class="typing-indicator">
-  <span></span><span></span><span></span> typing...
-</div>
-
 <div class="chat-box" id="chatBox"></div>
 
 <footer>
   <input type="text" id="messageInput" placeholder="Message...">
-  <button id="emojiBtn"><img src="https://cdn-icons-png.flaticon.com/512/742/742750.png" class="icon"></button>
-  <button id="imageBtn"><img src="https://cdn-icons-png.flaticon.com/512/685/685655.png" class="icon"></button>
-  <button id="likeBtn"><img src="https://cdn-icons-png.flaticon.com/512/889/889140.png" class="icon"></button>
   <button id="sendBtn"><img src="https://cdn-icons-png.flaticon.com/512/3682/3682321.png" class="icon"></button>
 </footer>
-
-<input type="file" id="imageInput" accept="image/*" style="display:none">
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
@@ -204,7 +147,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
   const provider = new GoogleAuthProvider();
 
   const ADMIN_EMAIL = "csmmohasinalam@gmail.com";
@@ -213,14 +155,9 @@
   const chatBox = document.getElementById("chatBox");
   const input = document.getElementById("messageInput");
   const sendBtn = document.getElementById("sendBtn");
-  const likeBtn = document.getElementById("likeBtn");
-  const emojiBtn = document.getElementById("emojiBtn");
   const toggleMode = document.getElementById("toggleMode");
-  const typingIndicator = document.getElementById("typingIndicator");
-  const imageBtn = document.getElementById("imageBtn");
-  const imageInput = document.getElementById("imageInput");
 
-  // 🌙 Dark Mode toggle
+  // 🌙 Dark Mode
   toggleMode.onclick = () => {
     document.body.classList.toggle("dark");
     toggleMode.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
@@ -232,57 +169,43 @@
     else loadMessages(user);
   });
 
-  // ✉️ Send text or like
+  // ✉️ Send message
   sendBtn.onclick = () => {
     if (input.value.trim()) {
       sendMessage(input.value);
       input.value = "";
     }
   };
-  likeBtn.onclick = () => sendMessage("👍", "like");
 
-  // 😊 Emoji
-  emojiBtn.onclick = () => {
-    input.value += "😊";
-  };
-
-  // 📷 Send image
-  imageBtn.onclick = () => imageInput.click();
-  imageInput.onchange = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const user = auth.currentUser;
-    const fileRef = ref(storage, `chat_images/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
-    sendMessage(url, "image");
-  };
-
-  async function sendMessage(content, type="text") {
+  async function sendMessage(content) {
     const user = auth.currentUser;
     if (!user) return;
     await addDoc(collection(db, "messages"), {
       name: user.displayName,
       email: user.email,
       content,
-      type,
-      seen: false,
       time: serverTimestamp()
     });
   }
 
-  // 👀 Load messages
   function loadMessages(user) {
     const q = query(collection(db, "messages"), orderBy("time"));
     onSnapshot(q, snapshot => {
       chatBox.innerHTML = "";
-      snapshot.forEach(async docSnap => {
+      snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        const mine = data.email === user.email;
         const isAdmin = data.email === ADMIN_EMAIL;
+        const isMine = data.email === user.email;
 
         const msgDiv = document.createElement("div");
-        msgDiv.className = "message " + (mine ? "sent" : "received");
+        msgDiv.classList.add("message");
+
+        // Admin → Right Side | User → Left Side
+        if (isAdmin) {
+          msgDiv.classList.add("admin", "right");
+        } else {
+          msgDiv.classList.add("user", "left");
+        }
 
         const profile = document.createElement("img");
         profile.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -290,31 +213,22 @@
 
         const bubble = document.createElement("div");
         bubble.className = "bubble";
-        if (data.type === "image") {
-          bubble.innerHTML = `<img src="${data.content}" style="max-width:100%;border-radius:10px;">`;
+        bubble.textContent = data.content;
+
+        if (isAdmin) {
+          bubble.innerHTML += ` <img src="${VERIFIED_BADGE}" class="verified">`;
+        }
+
+        // Layout: left = profile first, right = bubble first
+        if (isAdmin) {
+          msgDiv.appendChild(bubble);
+          msgDiv.appendChild(profile);
         } else {
-          bubble.textContent = data.content;
+          msgDiv.appendChild(profile);
+          msgDiv.appendChild(bubble);
         }
 
-        if (isAdmin) bubble.innerHTML += ` <img src="${VERIFIED_BADGE}" class="verified">`;
-
-        msgDiv.appendChild(mine ? bubble : profile);
-        msgDiv.appendChild(mine ? profile : bubble);
-
-        const seen = document.createElement("div");
-        seen.className = "seen-status";
-        if (mine) {
-          seen.innerHTML = data.seen
-            ? `<span class="tick">✅✅ Seen</span>`
-            : `✔✔ Sent`;
-        }
-
-        msgDiv.appendChild(seen);
         chatBox.appendChild(msgDiv);
-
-        if (!mine && !data.seen) {
-          await updateDoc(doc(db, "messages", docSnap.id), { seen: true });
-        }
       });
       chatBox.scrollTop = chatBox.scrollHeight;
     });
