@@ -7,11 +7,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-  body { background: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
-  .chat-container { width: 100%; max-width: 600px; height: 90vh; background: #1a1a1a; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 20px #00bcd4; }
+  body { background: #0f0f0f; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  .chat-container {
+    width: 100%; max-width: 600px; height: 90vh;
+    background: #1a1a1a; border-radius: 20px;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 0 20px #00bcd4;
+  }
   .header { background: #101010; padding: 10px; text-align: center; border-bottom: 2px solid #00bcd4; font-weight: 600; font-size: 1.2rem; color: #00bcd4; }
-  .messages { flex: 1; padding: 15px; overflow-y: auto; }
-  .message { margin-bottom: 12px; max-width: 80%; padding: 10px 14px; border-radius: 15px; position: relative; }
+  .messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+  .message { margin-bottom: 12px; max-width: 80%; padding: 10px 14px; border-radius: 15px; word-wrap: break-word; }
   .message.admin { background: linear-gradient(135deg, #00bcd4, #007bff); align-self: flex-end; }
   .message.user { background: #333; align-self: flex-start; }
   .message span.name { display: block; font-size: 0.85rem; margin-bottom: 5px; opacity: 0.8; }
@@ -24,13 +29,7 @@
 </style>
 </head>
 <body>
-<div>
-  <input id="name" placeholder="Your name" />
-  <input id="message" placeholder="Type a message..." />
-  <button onclick="sendMessage()">Send</button>
-</div>
 
-<div id="chat" style="margin-top:20px;"></div>
 <div class="chat-container">
   <div class="header">💬 CSM Messenger - Global Chat</div>
   <div class="messages" id="messages"></div>
@@ -41,79 +40,32 @@
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js"></script>
 
-<script><!-- Firebase App (core SDK) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-<!-- Realtime Database -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
-
 <script>
-  // তোমার Firebase config এখানে বসাও
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
     authDomain: "csm-bolg-site.firebaseapp.com",
-    databaseURL: "https://csm-bolg-site-default-rtdb.firebaseio.com", // ⚠️ এটা important
+    databaseURL: "https://csm-bolg-site-default-rtdb.firebaseio.com",
     projectId: "csm-bolg-site",
     storageBucket: "csm-bolg-site.firebasestorage.app",
     messagingSenderId: "931917499515",
     appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
-    measurementId: "G-13HVSL6BE4"
   };
 
-  // Firebase initialize
-  const app = firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+  const messaging = firebase.messaging();
 
-  // Example: message পাঠানো
-  function sendMessage() {
-    const name = document.getElementById("name").value;
-    const message = document.getElementById("message").value;
-
-    firebase.database().ref("messages").push({
-      name: name,
-      message: message,
-      time: new Date().toLocaleTimeString()
-    });
-
-    document.getElementById("message").value = "";
-  }
-
-  // Example: message live দেখা
-  firebase.database().ref("messages").on("child_added", function(snapshot) {
-    const msg = snapshot.val();
-    const msgContainer = document.getElementById("chat");
-    msgContainer.innerHTML += `<p><strong>${msg.name}:</strong> ${msg.message} <small>(${msg.time})</small></p>`;
-  });
-</script>
-  // Firebase Config
-  const firebaseConfig = {
-    apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
-    authDomain: "csm-bolg-site.firebaseapp.com",
-    projectId: "csm-bolg-site",
-    storageBucket: "csm-bolg-site.firebasestorage.app",
-    messagingSenderId: "931917499515",
-    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
-    measurementId: "G-13HVSL6BE4"
-  };
-
-  // Initialize Firebase
-  const app = firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  // Admin info
   const adminEmail = "csmmohasinalam@gmail.com";
   const adminVerifiedImg = "https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg";
-  
-  // Random user name (simulate login)
+
   const userEmail = prompt("Enter your email:");
   const userName = userEmail === adminEmail ? "Csm Mohasin Alam" : "Guest_" + Math.floor(Math.random() * 1000);
   const isAdmin = userEmail === adminEmail;
 
-  // Send message
   const sendBtn = document.getElementById("sendBtn");
   const msgInput = document.getElementById("msgInput");
   const messagesDiv = document.getElementById("messages");
@@ -125,25 +77,34 @@
   });
 
   sendBtn.addEventListener("click", sendMessage);
-  msgInput.addEventListener("keypress", e => {
-    if (e.key === "Enter") sendMessage();
-  });
+  msgInput.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
   function sendMessage() {
     const text = msgInput.value.trim();
-    if (text === "") return;
-    const msgData = {
-      name: userName,
-      text,
-      isAdmin,
-      timestamp: Date.now(),
-      seen: false
-    };
+    if (!text) return;
+    const msgData = { name: userName, text, isAdmin, timestamp: Date.now() };
     db.ref("messages").push(msgData);
     msgInput.value = "";
+
+    // যদি guest পাঠায় → admin কে নোটিফিকেশন পাঠাও
+    if (!isAdmin) {
+      sendAdminNotification(userName, text);
+    }
   }
 
-  // Load messages
+  function sendAdminNotification(sender, text) {
+    if ("Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification(`New message from ${sender}`, {
+            body: text,
+            icon: "https://cdn-icons-png.flaticon.com/512/10308/10308648.png"
+          });
+        }
+      });
+    }
+  }
+
   db.ref("messages").on("value", snap => {
     const data = snap.val();
     messagesDiv.innerHTML = "";
@@ -152,10 +113,9 @@
       const div = document.createElement("div");
       div.classList.add("message", msg.isAdmin ? "admin" : "user");
       div.innerHTML = `
-        <span class="name">${msg.name} 
-          ${msg.isAdmin ? `<img src="${adminVerifiedImg}" class="verified" title="Admin Verified"/>` : ""}
-        </span>
-        ${msg.text}
+        <span class="name">${msg.name}
+          ${msg.isAdmin ? `<img src="${adminVerifiedImg}" class="verified"/>` : ""}
+        </span>${msg.text}
         ${msg.isAdmin ? `<div class="seen">✔ Seen by all</div>` : ""}
       `;
       messagesDiv.appendChild(div);
@@ -163,25 +123,20 @@
     });
   });
 
-  // Typing animation
   db.ref("typing").on("value", snap => {
     const typer = snap.val();
     typingDiv.textContent = typer && typer !== userName ? `${typer} is typing...` : "";
   });
 
-  // Notification setup (Admin only)
-  const messaging = firebase.messaging();
-  const VAPID_KEY = "BGcWwsZX4QgaUQQ8NNZOHJUktYIIq5bx7W_vLULr_U6XH1BAZddxhfIGDglmAbGwgkze_shZF9Q5ts8fA4Ysztg";
-
-  if (isAdmin) {
-    Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        messaging.getToken({ vapidKey: VAPID_KEY }).then(token => {
-          console.log("Admin notification token:", token);
-        });
-      }
+  // 🔔 Firebase push notification setup (for Admin device)
+  if (isAdmin && "serviceWorker" in navigator) {
+    navigator.serviceWorker.register("firebase-messaging-sw.js").then(reg => {
+      messaging.getToken({ vapidKey: "BGcWwsZX4QgaUQQ8NNZOHJUktYIIq5bx7W_vLULr_U6XH1BAZddxhfIGDglmAbGwgkze_shZF9Q5ts8fA4Ysztg", serviceWorkerRegistration: reg })
+        .then(token => console.log("Admin notification token:", token))
+        .catch(err => console.error(err));
     });
   }
 </script>
+
 </body>
 </html>
