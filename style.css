@@ -15,9 +15,8 @@ h1 {
   color: #ff007c;
 }
 main {
-  width: 90%;
-  max-width: 600px;
-  margin: 30px 0;
+  margin: 20px;
+  padding-bottom: 180px;
 }
 .post {
   background: #1a1a1a;
