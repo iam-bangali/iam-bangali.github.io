@@ -40,11 +40,13 @@
   </div>
 </div>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js"></script>
 
 <script>
+  // 🔥 Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
     authDomain: "csm-bolg-site.firebaseapp.com",
@@ -52,13 +54,15 @@
     projectId: "csm-bolg-site",
     storageBucket: "csm-bolg-site.firebasestorage.app",
     messagingSenderId: "931917499515",
-    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
+    appId: "1:931917499515:web:dc9890e7e990e55d7e66de"
   };
 
+  // 🔹 Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const messaging = firebase.messaging();
 
+  // 🔹 User setup
   const adminEmail = "csmmohasinalam@gmail.com";
   const adminVerifiedImg = "https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg";
 
@@ -71,11 +75,13 @@
   const messagesDiv = document.getElementById("messages");
   const typingDiv = document.getElementById("typing");
 
+  // 🔹 Typing event
   msgInput.addEventListener("input", () => {
     db.ref("typing").set(userName);
     setTimeout(() => db.ref("typing").remove(), 2000);
   });
 
+  // 🔹 Send message function
   sendBtn.addEventListener("click", sendMessage);
   msgInput.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
@@ -83,20 +89,20 @@
     const text = msgInput.value.trim();
     if (!text) return;
     const msgData = { name: userName, text, isAdmin, timestamp: Date.now() };
-    db.ref("messages").push(msgData);
-    msgInput.value = "";
+    db.ref("messages").push(msgData)
+      .then(() => msgInput.value = "")
+      .catch(err => console.error("Send Error:", err));
 
-    // যদি guest পাঠায় → admin কে নোটিফিকেশন পাঠাও
-    if (!isAdmin) {
-      sendAdminNotification(userName, text);
-    }
+    // ✅ Notify Admin if guest sends message
+    if (!isAdmin) sendAdminNotification(userName, text);
   }
 
+  // 🔹 Admin notification popup
   function sendAdminNotification(sender, text) {
     if ("Notification" in window) {
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
-          new Notification(`New message from ${sender}`, {
+          new Notification(`📩 New message from ${sender}`, {
             body: text,
             icon: "https://cdn-icons-png.flaticon.com/512/10308/10308648.png"
           });
@@ -105,6 +111,7 @@
     }
   }
 
+  // 🔹 Load all messages
   db.ref("messages").on("value", snap => {
     const data = snap.val();
     messagesDiv.innerHTML = "";
@@ -123,17 +130,20 @@
     });
   });
 
+  // 🔹 Typing indicator
   db.ref("typing").on("value", snap => {
     const typer = snap.val();
     typingDiv.textContent = typer && typer !== userName ? `${typer} is typing...` : "";
   });
 
-  // 🔔 Firebase push notification setup (for Admin device)
+  // 🔹 Register service worker for push (Admin only)
   if (isAdmin && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("firebase-messaging-sw.js").then(reg => {
-      messaging.getToken({ vapidKey: "BGcWwsZX4QgaUQQ8NNZOHJUktYIIq5bx7W_vLULr_U6XH1BAZddxhfIGDglmAbGwgkze_shZF9Q5ts8fA4Ysztg", serviceWorkerRegistration: reg })
-        .then(token => console.log("Admin notification token:", token))
-        .catch(err => console.error(err));
+      messaging.getToken({
+        vapidKey: "BGcWwsZX4QgaUQQ8NNZOHJUktYIIq5bx7W_vLULr_U6XH1BAZddxhfIGDglmAbGwgkze_shZF9Q5ts8fA4Ysztg",
+        serviceWorkerRegistration: reg
+      }).then(token => console.log("Admin notification token:", token))
+        .catch(err => console.error("Token Error:", err));
     });
   }
 </script>
