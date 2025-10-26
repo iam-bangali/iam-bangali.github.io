@@ -24,7 +24,13 @@
 </style>
 </head>
 <body>
+<div>
+  <input id="name" placeholder="Your name" />
+  <input id="message" placeholder="Type a message..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
 
+<div id="chat" style="margin-top:20px;"></div>
 <div class="chat-container">
   <div class="header">💬 CSM Messenger - Global Chat</div>
   <div class="messages" id="messages"></div>
@@ -40,7 +46,49 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js"></script>
 
+<script><!-- Firebase App (core SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<!-- Realtime Database -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+
 <script>
+  // তোমার Firebase config এখানে বসাও
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
+    authDomain: "csm-bolg-site.firebaseapp.com",
+    databaseURL: "https://csm-bolg-site-default-rtdb.firebaseio.com", // ⚠️ এটা important
+    projectId: "csm-bolg-site",
+    storageBucket: "csm-bolg-site.firebasestorage.app",
+    messagingSenderId: "931917499515",
+    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
+    measurementId: "G-13HVSL6BE4"
+  };
+
+  // Firebase initialize
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Example: message পাঠানো
+  function sendMessage() {
+    const name = document.getElementById("name").value;
+    const message = document.getElementById("message").value;
+
+    firebase.database().ref("messages").push({
+      name: name,
+      message: message,
+      time: new Date().toLocaleTimeString()
+    });
+
+    document.getElementById("message").value = "";
+  }
+
+  // Example: message live দেখা
+  firebase.database().ref("messages").on("child_added", function(snapshot) {
+    const msg = snapshot.val();
+    const msgContainer = document.getElementById("chat");
+    msgContainer.innerHTML += `<p><strong>${msg.name}:</strong> ${msg.message} <small>(${msg.time})</small></p>`;
+  });
+</script>
   // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
