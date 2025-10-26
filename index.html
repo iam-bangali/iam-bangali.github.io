@@ -35,12 +35,12 @@
       position: relative;
     }
     .post.admin {
-      border-left: 4px solid #ff007c;
-      box-shadow: 0 0 10px rgba(255, 0, 124, 0.5);
+      border-left: 4px solid #1da1f2;
+      box-shadow: 0 0 10px rgba(29, 161, 242, 0.5);
     }
     .post.guest {
-      border-left: 4px solid #00aeff;
-      box-shadow: 0 0 10px rgba(0, 174, 255, 0.5);
+      border-left: 4px solid #ff007c;
+      box-shadow: 0 0 10px rgba(255, 0, 124, 0.5);
     }
     footer {
       position: fixed;
@@ -88,7 +88,6 @@
       color: #fff;
     }
 
-    /* Modal */
     .modal {
       position: fixed;
       top: 0; left: 0;
@@ -118,18 +117,13 @@
       color: #fff;
     }
 
-    /* ✅ Verified badges */
     .verified {
       display: inline-block;
       margin-left: 6px;
       vertical-align: middle;
     }
-    .verified.admin {
-      color: #1da1f2; /* Blue badge */
-    }
-    .verified.guest {
-      color: #333; /* Black badge */
-    }
+    .verified.admin { color: #1da1f2; }  /* Blue */
+    .verified.guest { color: #333; }     /* Black */
   </style>
 </head>
 <body>
@@ -154,7 +148,6 @@
     <button id="addPost">Add Post</button>
   </footer>
 
-  <!-- ✏️ Edit Modal -->
   <div class="modal" id="editModal">
     <div class="modal-content">
       <h3>Edit Post</h3>
@@ -172,7 +165,7 @@
       serverTimestamp, query, orderBy, deleteDoc, doc, updateDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import {
-      getAuth, signInWithEmailAndPassword, signOut
+      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -196,7 +189,6 @@
     const passwordInput = document.getElementById("password");
     const footerForm = document.getElementById("footerForm");
     const addPostBtn = document.getElementById("addPost");
-
     const editModal = document.getElementById("editModal");
     const editTitle = document.getElementById("editTitle");
     const editContent = document.getElementById("editContent");
@@ -208,7 +200,32 @@
     let currentUserName = "Guest";
     let currentEditId = null;
 
-    // Load Posts (newest first)
+    // ✅ Auto login check
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUserEmail = user.email;
+        if (user.email === "csmmohasinalam@gmail.com") {
+          currentUserRole = "admin";
+          currentUserName = "CSM Mohasin Alam";
+        } else {
+          currentUserRole = "guest";
+          currentUserName = user.email.split("@")[0];
+        }
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        footerForm.style.display = "flex";
+      } else {
+        currentUserRole = "visitor";
+        currentUserName = "Guest";
+        currentUserEmail = null;
+        footerForm.style.display = "none";
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+      }
+      loadPosts();
+    });
+
+    // Load posts (newest first)
     async function loadPosts() {
       postsContainer.innerHTML = "<h2>📜 Blog Posts</h2>";
       const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
@@ -218,7 +235,6 @@
         const div = document.createElement("div");
         div.classList.add("post", post.role);
 
-        // ✅ Verified Badge
         const badge = post.role === "admin"
           ? `<span class='verified admin'>✔️</span>`
           : `<span class='verified guest'>✔️</span>`;
@@ -226,10 +242,9 @@
         div.innerHTML = `
           <h3>${post.title}</h3>
           <p>${post.content}</p>
-          <small>✍️ ${post.role === "admin" ? "Admin" : "User"}: ${post.author} ${badge}</small>
+          <small>✍️ ${post.author} ${badge}</small>
         `;
 
-        // Only Admin sees edit/delete
         if (currentUserRole === "admin") {
           const editBtn = document.createElement("button");
           editBtn.textContent = "Edit";
@@ -252,8 +267,6 @@
       });
     }
 
-    loadPosts();
-
     // Login
     loginBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
@@ -263,20 +276,6 @@
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        currentUserEmail = email;
-
-        if (email === "csmmohasinalam@gmail.com") {
-          currentUserRole = "admin";
-          currentUserName = "CSM Mohasin Alam";
-        } else {
-          currentUserRole = "guest";
-          currentUserName = email.split("@")[0];
-        }
-
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        footerForm.style.display = "flex";
-        loadPosts();
       } catch (error) {
         alert("Login Failed: " + error.message);
       }
@@ -285,13 +284,6 @@
     // Logout
     logoutBtn.addEventListener("click", async () => {
       await signOut(auth);
-      currentUserRole = "visitor";
-      currentUserName = "Guest";
-      currentUserEmail = null;
-      footerForm.style.display = "none";
-      loginBtn.style.display = "inline-block";
-      logoutBtn.style.display = "none";
-      loadPosts();
     });
 
     // Add Post
@@ -313,7 +305,6 @@
       loadPosts();
     });
 
-    // Modal functions
     function openEditModal(id, title, content) {
       currentEditId = id;
       editTitle.value = title;
@@ -338,4 +329,4 @@
     };
   </script>
 </body>
-  </html>
+</html>
