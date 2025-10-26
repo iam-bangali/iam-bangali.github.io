@@ -1,206 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iam-bangali Blog</title>
-<style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: #000;
-    color: white;
-    text-align: center;
-  }
-  h1 {
-    color: #ff007f;
-    margin-top: 20px;
-  }
-  .container {
-    max-width: 600px;
-    margin: auto;
-  }
-  input, textarea {
-    width: 90%;
-    margin: 8px;
-    padding: 10px;
-    border: 1px solid #ff007f;
-    border-radius: 5px;
-    background: #111;
-    color: white;
-  }
-  button {
-    background: #ff007f;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    color: white;
-    font-weight: bold;
-  }
-  button:hover {
-    opacity: 0.8;
-  }
-  .post {
-    border: 1px solid #ff007f;
-    margin: 10px;
-    padding: 10px;
-    border-radius: 10px;
-    background: #111;
-    text-align: left;
-  }
-  .author {
-    font-size: 14px;
-    color: #ccc;
-  }
-  .verified-blue {
-    color: #00b3ff;
-  }
-  .verified-black {
-    color: #888;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔥 CSM Blog (No Login)</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background: #0d0d0d;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      text-align: center;
+      margin-top: 40px;
+    }
+    h1 {
+      color: #ff007c;
+    }
+    main {
+      margin: 20px;
+      width: 90%;
+      max-width: 700px;
+      padding-bottom: 180px;
+    }
+    .post {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+    .author {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #ccc;
+    }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      background: #111;
+      padding: 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 -2px 15px rgba(255, 0, 124, 0.4);
+    }
+    footer input, footer textarea {
+      width: 90%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+    }
+    button {
+      background: #ff007c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e6006f;
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>🔥 CSM Blog</h1>
+    <p>Powered by Firebase</p>
+  </header>
 
-<h1>🔥 iam-bangali Blog</h1>
-<p>Powered by Firebase</p>
+  <main id="posts"></main>
 
-<div id="authSection" class="container">
-  <h2>Login to post</h2>
-  <input type="email" id="email" placeholder="Enter any email">
-  <input type="password" id="password" placeholder="Enter any password">
-  <button onclick="login()">Login</button>
-</div>
+  <footer>
+    <input type="text" id="title" placeholder="Post title..." />
+    <textarea id="content" placeholder="Write something..."></textarea>
+    <input type="text" id="author" placeholder="Your name..." />
+    <button id="addPost">Add Post</button>
+  </footer>
 
-<div id="postSection" class="container" style="display:none;">
-  <h2>Create Post</h2>
-  <textarea id="postContent" placeholder="Write something..."></textarea>
-  <button onclick="addPost()">Post</button>
-  <button onclick="logout()">Logout</button>
-</div>
+  <script type="module">
+    // Firebase Import
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<div id="postsContainer" class="container"></div>
+    // 🔹 তোমার Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
+      authDomain: "csm-bolg-site.firebaseapp.com",
+      projectId: "csm-bolg-site",
+      storageBucket: "csm-bolg-site.firebasestorage.app",
+      messagingSenderId: "931917499515",
+      appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
+      measurementId: "G-13HVSL6BE4"
+    };
 
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-  import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBJDxMljBYj-P2O-JqGuD4ZTW_BqA9dvkY",
-    authDomain: "csm-bolg-site.firebaseapp.com",
-    databaseURL: "https://csm-bolg-site-default-rtdb.firebaseio.com",
-    projectId: "csm-bolg-site",
-    storageBucket: "csm-bolg-site.appspot.com",
-    messagingSenderId: "917499515",
-    appId: "1:917499515:web:dc9890e7e990e55d7e66de",
-  };
+    const postsContainer = document.getElementById("posts");
+    const addBtn = document.getElementById("addPost");
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-
-  const adminEmail = "csm.mohasin@gmail.com";
-
-  const authSection = document.getElementById("authSection");
-  const postSection = document.getElementById("postSection");
-  const postsContainer = document.getElementById("postsContainer");
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      authSection.style.display = "none";
-      postSection.style.display = "block";
-      loadPosts(user.email);
-    } else {
-      authSection.style.display = "block";
-      postSection.style.display = "none";
-      loadPosts();
-    }
-  });
-
-  async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value || "guest123";
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login successful!");
-    } catch (error) {
-      // Auto create guest account if not exist
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        alert("New user created successfully!");
-      } catch (e) {
-        alert("Login Failed: " + e.message);
-      }
-    }
-  }
-
-  function logout() {
-    signOut(auth);
-  }
-
-  function addPost() {
-    const content = document.getElementById("postContent").value.trim();
-    if (!content) return alert("Please write something!");
-
-    const user = auth.currentUser;
-    if (!user) return alert("Login first!");
-
-    const name = user.email === adminEmail 
-      ? "CSM Mohasin Alam"
-      : user.email.split("@")[0];
-
-    const verifiedClass = user.email === adminEmail ? "verified-blue" : "verified-black";
-    const newPostRef = push(ref(db, "posts"));
-    set(newPostRef, {
-      author: name,
-      email: user.email,
-      verified: verifiedClass,
-      content: content,
-      timestamp: Date.now()
-    });
-    document.getElementById("postContent").value = "";
-  }
-
-  function loadPosts(currentEmail = null) {
-    onValue(ref(db, "posts"), (snapshot) => {
-      const data = snapshot.val();
+    // 🔹 Load posts (new first)
+    async function loadPosts() {
+      const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+      const querySnapshot = await getDocs(q);
       postsContainer.innerHTML = "";
 
-      if (data) {
-        const posts = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
-        posts.forEach(([id, post]) => {
-          const canEdit = currentEmail === adminEmail;
-          const postDiv = document.createElement("div");
-          postDiv.className = "post";
-          postDiv.innerHTML = `
+      querySnapshot.forEach((doc) => {
+        const post = doc.data();
+        postsContainer.innerHTML += `
+          <div class="post">
+            <h3>${post.title}</h3>
             <p>${post.content}</p>
-            <p class="author">✍️ ${post.author} <span class="${post.verified}">✔</span></p>
-            ${canEdit ? `
-              <button onclick="editPost('${id}', '${post.content}')">Edit</button>
-              <button onclick="deletePost('${id}')">Delete</button>
-            ` : ""}
-          `;
-          postsContainer.appendChild(postDiv);
-        });
-      }
+            <div class="author">— ${post.author || "Anonymous"}</div>
+          </div>
+        `;
+      });
+    }
+
+    // 🔹 Add post
+    addBtn.addEventListener("click", async () => {
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      const author = document.getElementById("author").value.trim() || "Guest";
+
+      if (!title || !content) return alert("Please write something!");
+
+      await addDoc(collection(db, "posts"), {
+        title,
+        content,
+        author,
+        timestamp: serverTimestamp()
+      });
+
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
+      document.getElementById("author").value = "";
+
+      loadPosts();
     });
-  }
 
-  window.deletePost = function(id) {
-    if (confirm("Are you sure?")) {
-      remove(ref(db, "posts/" + id));
-    }
-  };
-
-  window.editPost = function(id, oldContent) {
-    const newContent = prompt("Edit your post:", oldContent);
-    if (newContent && newContent !== oldContent) {
-      update(ref(db, "posts/" + id), { content: newContent });
-    }
-  };
-</script>
+    loadPosts();
+  </script>
 </body>
 </html>
