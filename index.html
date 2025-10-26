@@ -1,217 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messenger Chat - CSM Mohasin Alam</title>
-
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-
-<style>
-  * {margin:0;padding:0;box-sizing:border-box;}
-  body {
-    font-family:'Poppins',sans-serif;
-    background:#0e0e0e;
-    color:#fff;
-    height:100vh;
-    display:flex;
-    flex-direction:column;
-  }
-
-  header {
-    background:#1a1a1a;
-    padding:10px 20px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    box-shadow:0 2px 5px rgba(0,0,0,0.3);
-  }
-
-  header h1 {font-size:20px;color:#00aaff;}
-  #logoutBtn {
-    background:#ff4444;
-    border:none;
-    color:#fff;
-    padding:5px 10px;
-    border-radius:6px;
-    cursor:pointer;
-  }
-
-  .chat-container {
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
-
-  .messages {
-    flex:1;
-    overflow-y:auto;
-    padding:10px;
-    display:flex;
-    flex-direction:column;
-  }
-
-  .msg {
-    margin:6px 0;
-    padding:8px 12px;
-    border-radius:12px;
-    max-width:80%;
-    word-wrap:break-word;
-    position:relative;
-  }
-
-  .msg .name {
-    font-size:12px;
-    font-weight:600;
-  }
-
-  .msg .text {
-    font-size:15px;
-  }
-
-  .msg .time {
-    font-size:10px;
-    opacity:0.7;
-    text-align:right;
-    margin-top:4px;
-  }
-
-  .admin {background:#007bff;align-self:flex-end;}
-  .user {background:#333;align-self:flex-start;}
-
-  .verified {
-    width:14px;
-    height:14px;
-    vertical-align:middle;
-    margin-left:4px;
-    border-radius:50%;
-  }
-
-  footer {
-    background:#1a1a1a;
-    padding:10px;
-    display:flex;
-  }
-
-  footer input {
-    flex:1;
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    outline:none;
-  }
-
-  footer button {
-    margin-left:10px;
-    background:#00aaff;
-    border:none;
-    padding:10px 15px;
-    border-radius:8px;
-    cursor:pointer;
-    color:#fff;
-  }
-
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messenger Pro Chat - CSM Mohasin Alam</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+  <header>
+    <div class="header-left">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Meta_Platforms_Inc._logo.svg" class="logo">
+      <h2>Messenger Pro Chat</h2>
+    </div>
+    <div class="header-right">
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
 
-<header>
-  <h1>Messenger Chat</h1>
-  <button id="logoutBtn">Logout</button>
-</header>
+  <main id="chatContainer">
+    <div id="messages" class="messages"></div>
+    <div id="typingIndicator" class="typing-indicator hidden">Someone is typing...</div>
+  </main>
 
-<div class="chat-container">
-  <div class="messages" id="messages"></div>
   <footer>
-    <input type="text" id="messageInput" placeholder="Type a message...">
-    <button id="sendBtn">Send</button>
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+      <div class="actions">
+        <button id="emojiBtn">😊</button>
+        <button id="likeBtn">👍</button>
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
   </footer>
-</div>
 
-<!-- Firebase -->
-<script type="module">
-  // Import Firebase
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
-
-  // 🔥 Your Firebase Config (Ready)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
-    authDomain: "csm-bolg-site.firebaseapp.com",
-    projectId: "csm-bolg-site",
-    storageBucket: "csm-bolg-site.firebasestorage.app",
-    messagingSenderId: "931917499515",
-    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
-    measurementId: "G-13HVSL6BE4"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
-
-  // ✅ Admin setup
-  const ADMIN_EMAIL = "csmmohasinalam@gmail.com";
-  const VERIFIED_BADGE = "https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_Verified_Badge.svg";
-
-  const messagesDiv = document.getElementById("messages");
-  const input = document.getElementById("messageInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  // Auto Login
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      signInWithPopup(auth, provider).catch(console.error);
-    } else {
-      loadMessages();
-    }
-  });
-
-  logoutBtn.onclick = () => signOut(auth);
-
-  async function sendMessage() {
-    const user = auth.currentUser;
-    if (!user || !input.value.trim()) return;
-    await addDoc(collection(db, "messages"), {
-      name: user.displayName,
-      email: user.email,
-      text: input.value,
-      time: serverTimestamp()
-    });
-    input.value = "";
-  }
-
-  sendBtn.onclick = sendMessage;
-  input.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
-
-  function loadMessages() {
-    const q = query(collection(db, "messages"), orderBy("time", "asc"));
-    onSnapshot(q, snapshot => {
-      messagesDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const isAdmin = data.email === ADMIN_EMAIL;
-
-        const div = document.createElement("div");
-        div.className = "msg " + (isAdmin ? "admin" : "user");
-        div.innerHTML = `
-          <div class="name">
-            ${data.name}
-            ${isAdmin ? `<img src="${VERIFIED_BADGE}" class="verified">` : ""}
-          </div>
-          <div class="text">${data.text}</div>
-          <div class="time">${data.time ? new Date(data.time.toDate()).toLocaleTimeString() : ""}</div>
-        `;
-        messagesDiv.appendChild(div);
-      });
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-  }
-</script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
