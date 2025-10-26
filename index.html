@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 CSM Blog (No Login)</title>
+  <title>🔥 CSM Blog System</title>
   <style>
     body {
       font-family: "Poppins", sans-serif;
@@ -18,9 +18,7 @@
       text-align: center;
       margin-top: 40px;
     }
-    h1 {
-      color: #ff007c;
-    }
+    h1 { color: #ff007c; }
     main {
       margin: 20px;
       width: 90%;
@@ -32,13 +30,28 @@
       padding: 15px;
       border-radius: 12px;
       margin-bottom: 15px;
+      position: relative;
     }
     .author {
-      display: flex;
-      align-items: center;
-      gap: 6px;
       font-size: 14px;
       color: #ccc;
+      margin-top: 8px;
+    }
+    .actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .actions button {
+      background: transparent;
+      border: none;
+      color: #ff007c;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 5px;
+    }
+    .actions button:hover {
+      text-decoration: underline;
     }
     footer {
       position: fixed;
@@ -67,15 +80,15 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    button:hover {
-      background: #e6006f;
-    }
+    button:hover { background: #e6006f; }
+    #loginBtn { margin-top: 15px; }
   </style>
 </head>
 <body>
   <header>
     <h1>🔥 CSM Blog</h1>
-    <p>Powered by Firebase</p>
+    <p>Guest & Admin Blog System</p>
+    <button id="loginBtn">Login / Logout</button>
   </header>
 
   <main id="posts"></main>
@@ -88,11 +101,11 @@
   </footer>
 
   <script type="module">
-    // Firebase Import
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    // 🔹 তোমার Firebase Config
+    // 🔥 তোমার Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
       authDomain: "csm-bolg-site.firebaseapp.com",
@@ -103,37 +116,54 @@
       measurementId: "G-13HVSL6BE4"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
 
     const postsContainer = document.getElementById("posts");
     const addBtn = document.getElementById("addPost");
+    const loginBtn = document.getElementById("loginBtn");
 
-    // 🔹 Load posts (new first)
+    const adminEmail = "youradminemail@gmail.com"; // 🔹 এখানে তোমার ইমেইল দাও
+
+    let currentUser = null;
+
+    // 🔹 Load Posts
     async function loadPosts() {
       const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
       const querySnapshot = await getDocs(q);
       postsContainer.innerHTML = "";
 
-      querySnapshot.forEach((doc) => {
-        const post = doc.data();
+      querySnapshot.forEach((d) => {
+        const post = d.data();
+        const id = d.id;
+
+        let actionsHTML = "";
+        if (currentUser && currentUser.email === adminEmail) {
+          actionsHTML = `
+            <div class="actions">
+              <button onclick="editPost('${id}')">✏️</button>
+              <button onclick="deletePost('${id}')">🗑️</button>
+            </div>`;
+        }
+
         postsContainer.innerHTML += `
-          <div class="post">
+          <div class="post" id="post-${id}">
+            ${actionsHTML}
             <h3>${post.title}</h3>
             <p>${post.content}</p>
-            <div class="author">— ${post.author || "Anonymous"}</div>
+            <div class="author">— ${post.author || "Guest"}</div>
           </div>
         `;
       });
     }
 
-    // 🔹 Add post
+    // 🔹 Add Post
     addBtn.addEventListener("click", async () => {
       const title = document.getElementById("title").value.trim();
       const content = document.getElementById("content").value.trim();
       const author = document.getElementById("author").value.trim() || "Guest";
-
       if (!title || !content) return alert("Please write something!");
 
       await addDoc(collection(db, "posts"), {
@@ -149,6 +179,43 @@
 
       loadPosts();
     });
+
+    // 🔹 Login / Logout
+    loginBtn.addEventListener("click", async () => {
+      if (currentUser) {
+        await signOut(auth);
+        alert("Logged out!");
+      } else {
+        await signInWithPopup(auth, provider);
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        loginBtn.textContent = "Logout";
+        console.log("Logged in:", user.email);
+      } else {
+        loginBtn.textContent = "Login";
+      }
+      loadPosts();
+    });
+
+    // 🔹 Delete Post (Admin only)
+    window.deletePost = async (id) => {
+      if (!confirm("Are you sure you want to delete this post?")) return;
+      await deleteDoc(doc(db, "posts", id));
+      loadPosts();
+    };
+
+    // 🔹 Edit Post (Admin only)
+    window.editPost = async (id) => {
+      const newContent = prompt("Edit your post:");
+      if (newContent) {
+        await updateDoc(doc(db, "posts", id), { content: newContent });
+        loadPosts();
+      }
+    };
 
     loadPosts();
   </script>
