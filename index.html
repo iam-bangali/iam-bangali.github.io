@@ -3,110 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 iam-bangali Blog</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>CSM Blog - Firebase Connected</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      background: #000;
-      color: #fff;
       font-family: "Poppins", sans-serif;
-      text-align: center;
       margin: 0;
-      padding: 0;
+      background: #0d0d0d;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-
     header {
-      padding: 30px 10px;
-      background: #111;
-      box-shadow: 0 0 30px #ff0095;
-      border-radius: 10px;
-      margin: 20px;
+      text-align: center;
+      margin-top: 40px;
     }
-
-    header h1 {
-      color: #ff0095;
-      font-size: 2em;
-      margin-bottom: 5px;
+    h1 {
+      color: #ff007c;
     }
-
     main {
       margin: 20px;
+      padding-bottom: 180px;
+      width: 90%;
+      max-width: 600px;
     }
-
+    .post {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 0 25px rgba(255, 0, 124, 0.3);
+    }
+    .author {
+      color: #ff007c;
+      font-size: 14px;
+      margin-top: 8px;
+    }
     footer {
-      background: #111;
-      padding: 20px;
       position: fixed;
       bottom: 0;
       left: 0;
-      right: 0;
-      box-shadow: 0 0 20px #ff0095;
-      border-radius: 15px 15px 0 0;
+      background: #111;
+      padding: 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 -2px 15px rgba(255, 0, 124, 0.4);
     }
-
-    input, textarea {
+    footer input, footer textarea {
       width: 90%;
-      max-width: 500px;
-      margin: 10px auto;
-      display: block;
+      margin-bottom: 10px;
       padding: 10px;
-      border-radius: 8px;
       border: none;
-      outline: none;
+      border-radius: 6px;
       background: #222;
       color: #fff;
-      font-size: 16px;
     }
-
     button {
-      background: #ff0095;
+      background: #ff007c;
       color: white;
       border: none;
-      padding: 10px 30px;
-      border-radius: 10px;
+      padding: 10px 20px;
+      border-radius: 6px;
       cursor: pointer;
-      font-weight: 600;
-      transition: 0.3s;
     }
-
     button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px #ff0095;
-    }
-
-    .post {
-      background: #111;
-      margin: 20px auto;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #ff0095;
-      max-width: 600px;
-      text-align: left;
-    }
-
-    .post h3 {
-      color: #fff;
-    }
-
-    .post p {
-      color: #ccc;
-    }
-
-    .post small {
-      color: #ff0095;
+      background: #e6006f;
     }
   </style>
 </head>
-
 <body>
+
   <header>
-    <h1>iam-bangali Blog</h1>
-    <p>Powered by Firebase 🔥</p>
+    <h1>💬 CSM Blog</h1>
+    <p>Share your thoughts — powered by Firebase</p>
   </header>
 
-  <main id="posts">
-    <h2>🔥 Blog Posts</h2>
-  </main>
+  <main id="posts"></main>
 
   <footer>
     <input type="text" id="title" placeholder="Post title..." />
@@ -114,25 +89,18 @@
     <button id="addPost">Add Post</button>
   </footer>
 
-  <!-- Firebase Script -->
+  <!-- Firebase Scripts -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { 
-      getFirestore, 
-      collection, 
-      getDocs, 
-      addDoc, 
-      serverTimestamp, 
-      orderBy, 
-      query 
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    // Import Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    // তোমার Firebase Config
+    // ✅ Your Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
       authDomain: "csm-bolg-site.firebaseapp.com",
       projectId: "csm-bolg-site",
-      storageBucket: "csm-bolg-site.firebasestorage.app",
+      storageBucket: "csm-bolg-site.appspot.com",
       messagingSenderId: "931917499515",
       appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
       measurementId: "G-13HVSL6BE4"
@@ -142,51 +110,53 @@
     const db = getFirestore(app);
 
     const postsContainer = document.getElementById("posts");
-    const titleInput = document.getElementById("title");
-    const contentInput = document.getElementById("content");
     const addPostBtn = document.getElementById("addPost");
 
-    // 🔹 Load posts (oldest first → new ones below)
-    async function loadPosts() {
-      postsContainer.innerHTML = "<h2>🔥 Blog Posts</h2>";
-      const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
-      const querySnapshot = await getDocs(q);
+    // তোমার admin email সেট করো এখানে
+    const adminEmail = "csmmohasinalam@gmail.com";
 
-      querySnapshot.forEach((doc) => {
-        const post = doc.data();
-        postsContainer.innerHTML += `
-          <div class="post">
-            <h3>${post.title}</h3>
-            <p>${post.content}</p>
-            <small>— ${post.author || "Anonymous"}</small>
-          </div>
-        `;
-      });
+    // Prompt for user email (simplest login idea)
+    let userEmail = localStorage.getItem("blogUserEmail");
+    if (!userEmail) {
+      userEmail = prompt("Enter your email:");
+      localStorage.setItem("blogUserEmail", userEmail);
     }
 
-    // 🔹 Add new post
+    // Add Post
     addPostBtn.addEventListener("click", async () => {
-      const title = titleInput.value.trim();
-      const content = contentInput.value.trim();
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      if (!title || !content) return alert("Please fill in all fields!");
 
-      if (!title || !content) {
-        alert("Please write something before posting!");
-        return;
-      }
+      const author = userEmail === adminEmail ? "Mohasin (Admin)" : "Guest";
 
       await addDoc(collection(db, "posts"), {
         title,
         content,
-        author: "Mohasin",
-        timestamp: serverTimestamp()
+        author,
+        timestamp: new Date()
       });
 
-      titleInput.value = "";
-      contentInput.value = "";
-      loadPosts();
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
     });
 
-    loadPosts();
+    // Display Posts (oldest first)
+    const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
+    onSnapshot(q, (snapshot) => {
+      postsContainer.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const post = doc.data();
+        const div = document.createElement("div");
+        div.classList.add("post");
+        div.innerHTML = `
+          <h2>${post.title}</h2>
+          <p>${post.content}</p>
+          <div class="author">— ${post.author}</div>
+        `;
+        postsContainer.appendChild(div);
+      });
+    });
   </script>
 </body>
 </html>
