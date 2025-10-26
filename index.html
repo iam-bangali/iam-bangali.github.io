@@ -42,6 +42,50 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
-  </script>
+  </script><!-- Firebase Scripts -->
+<script type="module">
+  // Import Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // তোমার নিজের Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
+    authDomain: "csm-bolg-site.firebaseapp.com",
+    projectId: "csm-bolg-site",
+    storageBucket: "csm-bolg-site.firebasestorage.app",
+    messagingSenderId: "931917499515",
+    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
+    measurementId: "G-13HVSL6BE4"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 🔹 posts ডেটা ওয়েবপেজে দেখানো
+  const postsContainer = document.createElement('div');
+  postsContainer.style.padding = "20px";
+  postsContainer.style.color = "#fff";
+  document.body.appendChild(postsContainer);
+
+  async function loadPosts() {
+    const querySnapshot = await getDocs(collection(db, "posts"));
+    postsContainer.innerHTML = "<h2>🔥 Blog Posts</h2>";
+
+    querySnapshot.forEach((doc) => {
+      const post = doc.data();
+      postsContainer.innerHTML += `
+        <div style="margin: 20px 0; background: #222; padding: 15px; border-radius: 10px;">
+          <h3>${post.title}</h3>
+          <p>${post.content}</p>
+          <small>— ${post.author}</small>
+        </div>
+      `;
+    });
+  }
+
+  loadPosts();
+</script>
 </body>
       </html>
