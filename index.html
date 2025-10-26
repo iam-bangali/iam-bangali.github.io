@@ -1,223 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 CSM Blog System</title>
-  <style>
-    body {
-      font-family: "Poppins", sans-serif;
-      margin: 0;
-      background: #0d0d0d;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSM Blog Site</title>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+  // 🔥 তোমার Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
+    authDomain: "csm-bolg-site.firebaseapp.com",
+    projectId: "csm-bolg-site",
+    storageBucket: "csm-bolg-site.firebasestorage.app",
+    messagingSenderId: "931917499515",
+    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
+    measurementId: "G-13HVSL6BE4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const postsContainer = document.getElementById("posts");
+  const postInput = document.getElementById("postInput");
+  const postButton = document.getElementById("postButton");
+  const loginButton = document.getElementById("loginButton");
+  const logoutButton = document.getElementById("logoutButton");
+  const userNameDisplay = document.getElementById("userName");
+
+  // 🧠 Admin Email
+  const adminEmail = "csmmohasinalam@gmail.com";
+
+  let currentUser = null;
+
+  // 🔹 Login
+  loginButton.onclick = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      currentUser = result.user;
+      renderUser(currentUser);
+    } catch (err) {
+      alert("Login Failed: " + err.message);
     }
-    header {
-      text-align: center;
-      margin-top: 40px;
-    }
-    h1 { color: #ff007c; }
-    main {
-      margin: 20px;
-      width: 90%;
-      max-width: 700px;
-      padding-bottom: 180px;
-    }
-    .post {
-      background: #1a1a1a;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      position: relative;
-    }
-    .author {
-      font-size: 14px;
-      color: #ccc;
-      margin-top: 8px;
-    }
-    .actions {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-    }
-    .actions button {
-      background: transparent;
-      border: none;
-      color: #ff007c;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 5px;
-    }
-    .actions button:hover {
-      text-decoration: underline;
-    }
-    footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      background: #111;
-      padding: 20px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      box-shadow: 0 -2px 15px rgba(255, 0, 124, 0.4);
-    }
-    footer input, footer textarea {
-      width: 90%;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-    }
-    button {
-      background: #ff007c;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover { background: #e6006f; }
-    #loginBtn { margin-top: 15px; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>🔥 CSM Blog</h1>
-    <p>Guest & Admin Blog System</p>
-    <button id="loginBtn">Login / Logout</button>
-  </header>
+  };
 
-  <main id="posts"></main>
+  // 🔹 Logout
+  logoutButton.onclick = async () => {
+    await signOut(auth);
+  };
 
-  <footer>
-    <input type="text" id="title" placeholder="Post title..." />
-    <textarea id="content" placeholder="Write something..."></textarea>
-    <input type="text" id="author" placeholder="Your name..." />
-    <button id="addPost">Add Post</button>
-  </footer>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    // 🔥 তোমার Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
-      authDomain: "csm-bolg-site.firebaseapp.com",
-      projectId: "csm-bolg-site",
-      storageBucket: "csm-bolg-site.firebasestorage.app",
-      messagingSenderId: "931917499515",
-      appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
-      measurementId: "G-13HVSL6BE4"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth();
-    const provider = new GoogleAuthProvider();
-
-    const postsContainer = document.getElementById("posts");
-    const addBtn = document.getElementById("addPost");
-    const loginBtn = document.getElementById("loginBtn");
-
-    const adminEmail = "youradminemail@gmail.com"; // 🔹 এখানে তোমার ইমেইল দাও
-
-    let currentUser = null;
-
-    // 🔹 Load Posts
-    async function loadPosts() {
-      const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-      const querySnapshot = await getDocs(q);
-      postsContainer.innerHTML = "";
-
-      querySnapshot.forEach((d) => {
-        const post = d.data();
-        const id = d.id;
-
-        let actionsHTML = "";
-        if (currentUser && currentUser.email === adminEmail) {
-          actionsHTML = `
-            <div class="actions">
-              <button onclick="editPost('${id}')">✏️</button>
-              <button onclick="deletePost('${id}')">🗑️</button>
-            </div>`;
-        }
-
-        postsContainer.innerHTML += `
-          <div class="post" id="post-${id}">
-            ${actionsHTML}
-            <h3>${post.title}</h3>
-            <p>${post.content}</p>
-            <div class="author">— ${post.author || "Guest"}</div>
-          </div>
-        `;
-      });
-    }
-
-    // 🔹 Add Post
-    addBtn.addEventListener("click", async () => {
-      const title = document.getElementById("title").value.trim();
-      const content = document.getElementById("content").value.trim();
-      const author = document.getElementById("author").value.trim() || "Guest";
-      if (!title || !content) return alert("Please write something!");
-
-      await addDoc(collection(db, "posts"), {
-        title,
-        content,
-        author,
-        timestamp: serverTimestamp()
-      });
-
-      document.getElementById("title").value = "";
-      document.getElementById("content").value = "";
-      document.getElementById("author").value = "";
-
-      loadPosts();
-    });
-
-    // 🔹 Login / Logout
-    loginBtn.addEventListener("click", async () => {
-      if (currentUser) {
-        await signOut(auth);
-        alert("Logged out!");
-      } else {
-        await signInWithPopup(auth, provider);
-      }
-    });
-
-    onAuthStateChanged(auth, (user) => {
+  // 🔹 Auth State Change
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
       currentUser = user;
-      if (user) {
-        loginBtn.textContent = "Logout";
-        console.log("Logged in:", user.email);
-      } else {
-        loginBtn.textContent = "Login";
-      }
-      loadPosts();
+      renderUser(user);
+    } else {
+      currentUser = null;
+      userNameDisplay.innerHTML = "👤 Guest (Viewing Mode)";
+      logoutButton.style.display = "none";
+      loginButton.style.display = "inline-block";
+    }
+    loadPosts();
+  });
+
+  // 🔹 Show User Info
+  function renderUser(user) {
+    const isAdmin = user.email === adminEmail;
+    const name = user.displayName || user.email.split("@")[0];
+    const badge = isAdmin
+      ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" width="20" style="border-radius:50%;margin-left:5px;">`
+      : `<span style="color:#000;">✔️</span>`;
+    userNameDisplay.innerHTML = `${name} ${badge}`;
+    loginButton.style.display = "none";
+    logoutButton.style.display = "inline-block";
+  }
+
+  // 🔹 Add Post
+  postButton.onclick = async () => {
+    if (!currentUser) {
+      alert("Please login to post!");
+      return;
+    }
+    const text = postInput.value.trim();
+    if (!text) return alert("Post cannot be empty!");
+
+    const name = currentUser.displayName || currentUser.email.split("@")[0];
+    const isAdmin = currentUser.email === adminEmail;
+    const author = isAdmin ? "CSM Mohasin Alam" : name;
+
+    await addDoc(collection(db, "posts"), {
+      text,
+      author,
+      email: currentUser.email,
+      timestamp: serverTimestamp(),
     });
 
-    // 🔹 Delete Post (Admin only)
-    window.deletePost = async (id) => {
-      if (!confirm("Are you sure you want to delete this post?")) return;
+    postInput.value = "";
+    loadPosts();
+  };
+
+  // 🔹 Load Posts (Newest First)
+  async function loadPosts() {
+    postsContainer.innerHTML = "<p>Loading...</p>";
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    const snapshot = await getDocs(q);
+    postsContainer.innerHTML = "";
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const isAdmin = data.email === adminEmail;
+      const canEdit = currentUser && currentUser.email === adminEmail;
+      const badge = isAdmin
+        ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" width="20" style="border-radius:50%;margin-left:5px;">`
+        : `<span style="color:#000;">✔️</span>`;
+
+      const div = document.createElement("div");
+      div.className = "post";
+      div.innerHTML = `
+        <h3>${data.author} ${badge}</h3>
+        <p>${data.text}</p>
+        ${canEdit
+          ? `<button onclick="editPost('${docSnap.id}', '${data.text}')">✏️ Edit</button>
+             <button onclick="deletePost('${docSnap.id}')">🗑️ Delete</button>`
+          : ""
+        }
+      `;
+      postsContainer.appendChild(div);
+    });
+  }
+
+  // 🔹 Edit Post
+  window.editPost = async (id, oldText) => {
+    const newText = prompt("Edit your post:", oldText);
+    if (newText) {
+      const ref = doc(db, "posts", id);
+      await updateDoc(ref, { text: newText });
+      loadPosts();
+    }
+  };
+
+  // 🔹 Delete Post
+  window.deletePost = async (id) => {
+    if (confirm("Delete this post?")) {
       await deleteDoc(doc(db, "posts", id));
       loadPosts();
-    };
+    }
+  };
+</script>
 
-    // 🔹 Edit Post (Admin only)
-    window.editPost = async (id) => {
-      const newContent = prompt("Edit your post:");
-      if (newContent) {
-        await updateDoc(doc(db, "posts", id), { content: newContent });
-        loadPosts();
-      }
-    };
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+  }
+  #userName { font-size: 1.2em; margin-bottom: 15px; }
+  textarea {
+    width: 90%; max-width: 600px;
+    height: 80px;
+    border: none; border-radius: 10px;
+    padding: 10px; margin-top: 10px;
+    font-size: 16px;
+  }
+  button {
+    margin: 10px; padding: 10px 20px;
+    border: none; border-radius: 8px;
+    background: #ff0080; color: #fff;
+    font-weight: 600; cursor: pointer;
+  }
+  button:hover { background: #ff66a3; }
+  .post {
+    background: #111;
+    border-radius: 15px;
+    padding: 15px;
+    margin: 15px auto;
+    width: 90%; max-width: 600px;
+    box-shadow: 0 0 15px #ff0080;
+    text-align: left;
+  }
+</style>
+</head>
 
-    loadPosts();
-  </script>
+<body>
+  <h1>🔥 CSM Blog Site 🔥</h1>
+  <div id="userName">👤 Guest (Viewing Mode)</div>
+  <button id="loginButton">Login with Google</button>
+  <button id="logoutButton" style="display:none;">Logout</button>
+
+  <textarea id="postInput" placeholder="Write something..."></textarea>
+  <br>
+  <button id="postButton">Post</button>
+
+  <div id="posts"></div>
 </body>
 </html>
