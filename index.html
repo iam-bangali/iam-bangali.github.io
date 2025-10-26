@@ -1,185 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 CSM Blog System</title>
-  <style>
-    body {
-      font-family: "Poppins", sans-serif;
-      margin: 0;
-      background: #0d0d0d;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    header {
-      text-align: center;
-      margin-top: 40px;
-    }
-    h1 { color: #ff007c; }
-    main {
-      margin: 20px;
-      width: 90%;
-      max-width: 700px;
-      padding-bottom: 180px;
-    }
-    .post {
-      background: #1a1a1a;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      position: relative;
-    }
-    .author {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .verify {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-    }
-    footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      background: #111;
-      padding: 20px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      box-shadow: 0 -2px 15px rgba(255, 0, 124, 0.4);
-    }
-    footer input, footer textarea {
-      width: 90%;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-    }
-    button {
-      background: #ff007c;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover { background: #e6006f; }
-    #loginBtn { margin-top: 10px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iam-bangali Blog</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #000;
+    color: white;
+    text-align: center;
+  }
+  h1 {
+    color: #ff007f;
+    margin-top: 20px;
+  }
+  .container {
+    max-width: 600px;
+    margin: auto;
+  }
+  input, textarea {
+    width: 90%;
+    margin: 8px;
+    padding: 10px;
+    border: 1px solid #ff007f;
+    border-radius: 5px;
+    background: #111;
+    color: white;
+  }
+  button {
+    background: #ff007f;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+  }
+  button:hover {
+    opacity: 0.8;
+  }
+  .post {
+    border: 1px solid #ff007f;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #111;
+    text-align: left;
+  }
+  .author {
+    font-size: 14px;
+    color: #ccc;
+  }
+  .verified-blue {
+    color: #00b3ff;
+  }
+  .verified-black {
+    color: #888;
+  }
+
+  /* ===== Custom Delete Confirm Modal ===== */
+  #confirmModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+  .modal-content {
+    background: #111;
+    border: 1px solid #ff007f;
+    border-radius: 10px;
+    padding: 25px;
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+    box-shadow: 0 0 20px #ff007f55;
+  }
+  .modal-content h3 {
+    color: #ff007f;
+    margin-bottom: 15px;
+  }
+  .modal-buttons {
+    display: flex;
+    justify-content: space-around;
+  }
+  .modal-buttons button {
+    width: 100px;
+  }
+  .cancel-btn {
+    background: #333;
+  }
+  .ok-btn {
+    background: #ff007f;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>🔥 CSM Blog</h1>
-    <p>Firebase Powered Blog System</p>
-    <button id="loginBtn">Login / Logout</button>
-  </header>
 
-  <main id="posts"></main>
+<h1>🔥 iam-bangali Blog</h1>
+<p>Powered by Firebase</p>
 
-  <footer id="editor" style="display:none;">
-    <input type="text" id="title" placeholder="Post title..." />
-    <textarea id="content" placeholder="Write something..."></textarea>
-    <button id="addPost">Add Post</button>
-  </footer>
+<div id="authSection" class="container">
+  <h2>Login to post</h2>
+  <input type="email" id="email" placeholder="Enter any email">
+  <input type="password" id="password" placeholder="Enter any password">
+  <button onclick="login()">Login</button>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<div id="postSection" class="container" style="display:none;">
+  <h2>Create Post</h2>
+  <textarea id="postContent" placeholder="Write something..."></textarea>
+  <button onclick="addPost()">Post</button>
+  <button onclick="logout()">Logout</button>
+</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
-      authDomain: "csm-bolg-site.firebaseapp.com",
-      projectId: "csm-bolg-site",
-      storageBucket: "csm-bolg-site.firebasestorage.app",
-      messagingSenderId: "931917499515",
-      appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
-      measurementId: "G-13HVSL6BE4"
-    };
+<div id="postsContainer" class="container"></div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth();
-    const provider = new GoogleAuthProvider();
+<!-- Custom Delete Confirm Modal -->
+<div id="confirmModal">
+  <div class="modal-content">
+    <h3>🗑 Delete this post?</h3>
+    <div class="modal-buttons">
+      <button class="cancel-btn" onclick="closeConfirm()">Cancel</button>
+      <button class="ok-btn" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
 
-    const postsContainer = document.getElementById("posts");
-    const addBtn = document.getElementById("addPost");
-    const loginBtn = document.getElementById("loginBtn");
-    const editor = document.getElementById("editor");
-    const adminEmail = "youradminemail@gmail.com"; // ← এখানে তোমার admin ইমেইল বসাও
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-    async function loadPosts() {
-      const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-      const querySnapshot = await getDocs(q);
+  const firebaseConfig = {
+    apiKey: "AIzaSyBJDxMljBYj-P2O-JqGuD4ZTW_BqA9dvkY",
+    authDomain: "csm-bolg-site.firebaseapp.com",
+    databaseURL: "https://csm-bolg-site-default-rtdb.firebaseio.com",
+    projectId: "csm-bolg-site",
+    storageBucket: "csm-bolg-site.appspot.com",
+    messagingSenderId: "917499515",
+    appId: "1:917499515:web:dc9890e7e990e55d7e66de",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const adminEmail = "csm.mohasin@gmail.com";
+
+  const authSection = document.getElementById("authSection");
+  const postSection = document.getElementById("postSection");
+  const postsContainer = document.getElementById("postsContainer");
+  const confirmModal = document.getElementById("confirmModal");
+  let postToDelete = null;
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      authSection.style.display = "none";
+      postSection.style.display = "block";
+      loadPosts(user.email);
+    } else {
+      authSection.style.display = "block";
+      postSection.style.display = "none";
+      loadPosts();
+    }
+  });
+
+  async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value || "guest123";
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("Login successful!");
+    } catch (error) {
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        alert("New user created successfully!");
+      } catch (e) {
+        alert("Login Failed: " + e.message);
+      }
+    }
+  }
+
+  function logout() {
+    signOut(auth);
+  }
+
+  function addPost() {
+    const content = document.getElementById("postContent").value.trim();
+    if (!content) return alert("Please write something!");
+
+    const user = auth.currentUser;
+    if (!user) return alert("Login first!");
+
+    const name = user.email === adminEmail 
+      ? "CSM Mohasin Alam"
+      : user.email.split("@")[0];
+
+    const verifiedClass = user.email === adminEmail ? "verified-blue" : "verified-black";
+    const newPostRef = push(ref(db, "posts"));
+    set(newPostRef, {
+      author: name,
+      email: user.email,
+      verified: verifiedClass,
+      content: content,
+      timestamp: Date.now()
+    });
+    document.getElementById("postContent").value = "";
+  }
+
+  function loadPosts(currentEmail = null) {
+    onValue(ref(db, "posts"), (snapshot) => {
+      const data = snapshot.val();
       postsContainer.innerHTML = "";
 
-      querySnapshot.forEach((doc) => {
-        const post = doc.data();
-        const isAdmin = post.authorEmail === adminEmail;
-        const badge = isAdmin
-          ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" class="verify">`
-          : `<span class="verify" style="background:#555;"></span>`;
-
-        postsContainer.innerHTML += `
-          <div class="post">
-            <h3>${post.title}</h3>
+      if (data) {
+        const posts = Object.entries(data).sort((a, b) => b[1].timestamp - a[1].timestamp);
+        posts.forEach(([id, post]) => {
+          const canEdit = currentEmail === adminEmail;
+          const postDiv = document.createElement("div");
+          postDiv.className = "post";
+          postDiv.innerHTML = `
             <p>${post.content}</p>
-            <div class="author">— ${post.authorName} ${badge}</div>
-          </div>
-        `;
-      });
+            <p class="author">✍️ ${post.author} <span class="${post.verified}">✔</span></p>
+            ${canEdit ? `
+              <button onclick="editPost('${id}', '${post.content}')">Edit</button>
+              <button onclick="openConfirm('${id}')">Delete</button>
+            ` : ""}
+          `;
+          postsContainer.appendChild(postDiv);
+        });
+      }
+    });
+  }
+
+  // ===== Custom Confirm Modal Functions =====
+  window.openConfirm = function(id) {
+    postToDelete = id;
+    confirmModal.style.display = "flex";
+  };
+
+  window.closeConfirm = function() {
+    postToDelete = null;
+    confirmModal.style.display = "none";
+  };
+
+  window.confirmDelete = function() {
+    if (postToDelete) {
+      remove(ref(db, "posts/" + postToDelete));
+      postToDelete = null;
+      confirmModal.style.display = "none";
     }
+  };
 
-    addBtn.addEventListener("click", async () => {
-      const title = document.getElementById("title").value.trim();
-      const content = document.getElementById("content").value.trim();
-      if (!title || !content) return alert("Please write something!");
-
-      const user = auth.currentUser;
-      const authorEmail = user?.email || "guest";
-      const authorName = user?.displayName || (authorEmail === "guest" ? "Guest" : authorEmail.split("@")[0]);
-
-      await addDoc(collection(db, "posts"), {
-        title,
-        content,
-        authorName,
-        authorEmail,
-        timestamp: new Date()
-      });
-
-      document.getElementById("title").value = "";
-      document.getElementById("content").value = "";
-      loadPosts();
-    });
-
-    loginBtn.addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (user) {
-        await signOut(auth);
-        alert("Logged out!");
-      } else {
-        await signInWithPopup(auth, provider);
-      }
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        editor.style.display = "flex";
-        loginBtn.textContent = "Logout";
-      } else {
-        editor.style.display = "none";
-        loginBtn.textContent = "Login";
-      }
-      loadPosts();
-    });
-
-    loadPosts();
-  </script>
+  window.editPost = function(id, oldContent) {
+    const newContent = prompt("Edit your post:", oldContent);
+    if (newContent && newContent !== oldContent) {
+      update(ref(db, "posts/" + id), { content: newContent });
+    }
+  };
+</script>
 </body>
 </html>
