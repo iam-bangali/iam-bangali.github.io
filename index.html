@@ -3,201 +3,322 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSM Blog Site</title>
+<title>Messenger Pro Chat v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
-<!-- Firebase -->
+<style>
+  * {margin:0;padding:0;box-sizing:border-box;}
+  body {
+    font-family:'Poppins',sans-serif;
+    background:#fff;
+    color:#000;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+    transition:background 0.4s, color 0.4s;
+  }
+
+  body.dark {
+    background:#111;
+    color:#f5f5f5;
+  }
+
+  header {
+    background:#0084ff;
+    color:#fff;
+    padding:10px 15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  .toggle {
+    background:none;
+    border:none;
+    color:white;
+    font-size:18px;
+    cursor:pointer;
+  }
+
+  .chat-box {
+    flex:1;
+    overflow-y:auto;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    scroll-behavior:smooth;
+  }
+
+  .message {
+    display:flex;
+    align-items:flex-end;
+    margin:6px 0;
+  }
+
+  .message img.profile {
+    width:35px;
+    height:35px;
+    border-radius:50%;
+    margin:0 6px;
+  }
+
+  .bubble {
+    max-width:70%;
+    padding:10px;
+    border-radius:16px;
+    word-wrap:break-word;
+    position:relative;
+  }
+
+  .sent .bubble {
+    background:#0084ff;
+    color:#fff;
+    border-bottom-right-radius:4px;
+    align-self:flex-end;
+  }
+
+  .received .bubble {
+    background:#e4e6eb;
+    color:#000;
+    border-bottom-left-radius:4px;
+  }
+
+  body.dark .received .bubble { background:#333; color:#f5f5f5; }
+  body.dark .sent .bubble { background:#0064d1; }
+
+  .seen-status {
+    font-size:11px;
+    color:#777;
+    text-align:right;
+    margin-top:2px;
+  }
+
+  .seen-status .tick { color:#0084ff; }
+
+  .verified {
+    width:14px;
+    height:14px;
+    margin-left:4px;
+    vertical-align:middle;
+    border-radius:50%;
+  }
+
+  footer {
+    background:#f0f2f5;
+    padding:8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+  }
+
+  body.dark footer { background:#222; }
+
+  footer input {
+    flex:1;
+    padding:10px;
+    border:none;
+    border-radius:20px;
+    background:#fff;
+    outline:none;
+  }
+
+  body.dark footer input { background:#333; color:#fff; }
+
+  footer button {
+    background:none;
+    border:none;
+    cursor:pointer;
+  }
+
+  footer img.icon {
+    width:26px;
+    height:26px;
+  }
+
+  .typing-indicator {
+    display:none;
+    font-size:13px;
+    color:#777;
+    margin-left:12px;
+  }
+
+  .typing-indicator span {
+    display:inline-block;
+    width:5px;
+    height:5px;
+    background:#888;
+    border-radius:50%;
+    margin-right:3px;
+    animation: blink 1.2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 80%, 100% {opacity:0;}
+    40% {opacity:1;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span>Messenger Chat</span>
+  <button id="toggleMode" class="toggle">🌙</button>
+</header>
+
+<div id="typingIndicator" class="typing-indicator">
+  <span></span><span></span><span></span> typing...
+</div>
+
+<div class="chat-box" id="chatBox"></div>
+
+<footer>
+  <input type="text" id="messageInput" placeholder="Message...">
+  <button id="emojiBtn"><img src="https://cdn-icons-png.flaticon.com/512/742/742750.png" class="icon"></button>
+  <button id="imageBtn"><img src="https://cdn-icons-png.flaticon.com/512/685/685655.png" class="icon"></button>
+  <button id="likeBtn"><img src="https://cdn-icons-png.flaticon.com/512/889/889140.png" class="icon"></button>
+  <button id="sendBtn"><img src="https://cdn-icons-png.flaticon.com/512/3682/3682321.png" class="icon"></button>
+</footer>
+
+<input type="file" id="imageInput" accept="image/*" style="display:none">
+
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
 
-  // 🔥 তোমার Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
     authDomain: "csm-bolg-site.firebaseapp.com",
     projectId: "csm-bolg-site",
-    storageBucket: "csm-bolg-site.firebasestorage.app",
+    storageBucket: "csm-bolg-site.appspot.com",
     messagingSenderId: "931917499515",
-    appId: "1:931917499515:web:dc9890e7e990e55d7e66de",
-    measurementId: "G-13HVSL6BE4"
+    appId: "1:931917499515:web:dc9890e7e990e55d7e66de"
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
   const auth = getAuth(app);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
   const provider = new GoogleAuthProvider();
 
-  const postsContainer = document.getElementById("posts");
-  const postInput = document.getElementById("postInput");
-  const postButton = document.getElementById("postButton");
-  const loginButton = document.getElementById("loginButton");
-  const logoutButton = document.getElementById("logoutButton");
-  const userNameDisplay = document.getElementById("userName");
+  const ADMIN_EMAIL = "csmmohasinalam@gmail.com";
+  const VERIFIED_BADGE = "https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg";
 
-  // 🧠 Admin Email
-  const adminEmail = "csmmohasinalam@gmail.com";
+  const chatBox = document.getElementById("chatBox");
+  const input = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const likeBtn = document.getElementById("likeBtn");
+  const emojiBtn = document.getElementById("emojiBtn");
+  const toggleMode = document.getElementById("toggleMode");
+  const typingIndicator = document.getElementById("typingIndicator");
+  const imageBtn = document.getElementById("imageBtn");
+  const imageInput = document.getElementById("imageInput");
 
-  let currentUser = null;
-
-  // 🔹 Login
-  loginButton.onclick = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      currentUser = result.user;
-      renderUser(currentUser);
-    } catch (err) {
-      alert("Login Failed: " + err.message);
-    }
+  // 🌙 Dark Mode toggle
+  toggleMode.onclick = () => {
+    document.body.classList.toggle("dark");
+    toggleMode.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
   };
 
-  // 🔹 Logout
-  logoutButton.onclick = async () => {
-    await signOut(auth);
-  };
-
-  // 🔹 Auth State Change
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUser = user;
-      renderUser(user);
-    } else {
-      currentUser = null;
-      userNameDisplay.innerHTML = "👤 Guest (Viewing Mode)";
-      logoutButton.style.display = "none";
-      loginButton.style.display = "inline-block";
-    }
-    loadPosts();
+  // 👤 Login system
+  onAuthStateChanged(auth, async user => {
+    if (!user) await signInWithPopup(auth, provider);
+    else loadMessages(user);
   });
 
-  // 🔹 Show User Info
-  function renderUser(user) {
-    const isAdmin = user.email === adminEmail;
-    const name = user.displayName || user.email.split("@")[0];
-    const badge = isAdmin
-      ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" width="20" style="border-radius:50%;margin-left:5px;">`
-      : `<span style="color:#000;">✔️</span>`;
-    userNameDisplay.innerHTML = `${name} ${badge}`;
-    loginButton.style.display = "none";
-    logoutButton.style.display = "inline-block";
-  }
-
-  // 🔹 Add Post
-  postButton.onclick = async () => {
-    if (!currentUser) {
-      alert("Please login to post!");
-      return;
+  // ✉️ Send text or like
+  sendBtn.onclick = () => {
+    if (input.value.trim()) {
+      sendMessage(input.value);
+      input.value = "";
     }
-    const text = postInput.value.trim();
-    if (!text) return alert("Post cannot be empty!");
+  };
+  likeBtn.onclick = () => sendMessage("👍", "like");
 
-    const name = currentUser.displayName || currentUser.email.split("@")[0];
-    const isAdmin = currentUser.email === adminEmail;
-    const author = isAdmin ? "CSM Mohasin Alam" : name;
-
-    await addDoc(collection(db, "posts"), {
-      text,
-      author,
-      email: currentUser.email,
-      timestamp: serverTimestamp(),
-    });
-
-    postInput.value = "";
-    loadPosts();
+  // 😊 Emoji
+  emojiBtn.onclick = () => {
+    input.value += "😊";
   };
 
-  // 🔹 Load Posts (Newest First)
-  async function loadPosts() {
-    postsContainer.innerHTML = "<p>Loading...</p>";
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    const snapshot = await getDocs(q);
-    postsContainer.innerHTML = "";
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const isAdmin = data.email === adminEmail;
-      const canEdit = currentUser && currentUser.email === adminEmail;
-      const badge = isAdmin
-        ? `<img src="https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg" width="20" style="border-radius:50%;margin-left:5px;">`
-        : `<span style="color:#000;">✔️</span>`;
+  // 📷 Send image
+  imageBtn.onclick = () => imageInput.click();
+  imageInput.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const user = auth.currentUser;
+    const fileRef = ref(storage, `chat_images/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    sendMessage(url, "image");
+  };
 
-      const div = document.createElement("div");
-      div.className = "post";
-      div.innerHTML = `
-        <h3>${data.author} ${badge}</h3>
-        <p>${data.text}</p>
-        ${canEdit
-          ? `<button onclick="editPost('${docSnap.id}', '${data.text}')">✏️ Edit</button>
-             <button onclick="deletePost('${docSnap.id}')">🗑️ Delete</button>`
-          : ""
+  async function sendMessage(content, type="text") {
+    const user = auth.currentUser;
+    if (!user) return;
+    await addDoc(collection(db, "messages"), {
+      name: user.displayName,
+      email: user.email,
+      content,
+      type,
+      seen: false,
+      time: serverTimestamp()
+    });
+  }
+
+  // 👀 Load messages
+  function loadMessages(user) {
+    const q = query(collection(db, "messages"), orderBy("time"));
+    onSnapshot(q, snapshot => {
+      chatBox.innerHTML = "";
+      snapshot.forEach(async docSnap => {
+        const data = docSnap.data();
+        const mine = data.email === user.email;
+        const isAdmin = data.email === ADMIN_EMAIL;
+
+        const msgDiv = document.createElement("div");
+        msgDiv.className = "message " + (mine ? "sent" : "received");
+
+        const profile = document.createElement("img");
+        profile.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        profile.className = "profile";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        if (data.type === "image") {
+          bubble.innerHTML = `<img src="${data.content}" style="max-width:100%;border-radius:10px;">`;
+        } else {
+          bubble.textContent = data.content;
         }
-      `;
-      postsContainer.appendChild(div);
+
+        if (isAdmin) bubble.innerHTML += ` <img src="${VERIFIED_BADGE}" class="verified">`;
+
+        msgDiv.appendChild(mine ? bubble : profile);
+        msgDiv.appendChild(mine ? profile : bubble);
+
+        const seen = document.createElement("div");
+        seen.className = "seen-status";
+        if (mine) {
+          seen.innerHTML = data.seen
+            ? `<span class="tick">✅✅ Seen</span>`
+            : `✔✔ Sent`;
+        }
+
+        msgDiv.appendChild(seen);
+        chatBox.appendChild(msgDiv);
+
+        if (!mine && !data.seen) {
+          await updateDoc(doc(db, "messages", docSnap.id), { seen: true });
+        }
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
   }
-
-  // 🔹 Edit Post
-  window.editPost = async (id, oldText) => {
-    const newText = prompt("Edit your post:", oldText);
-    if (newText) {
-      const ref = doc(db, "posts", id);
-      await updateDoc(ref, { text: newText });
-      loadPosts();
-    }
-  };
-
-  // 🔹 Delete Post
-  window.deletePost = async (id) => {
-    if (confirm("Delete this post?")) {
-      await deleteDoc(doc(db, "posts", id));
-      loadPosts();
-    }
-  };
 </script>
-
-<style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: #0a0a0a;
-    color: #fff;
-    text-align: center;
-    padding: 20px;
-  }
-  #userName { font-size: 1.2em; margin-bottom: 15px; }
-  textarea {
-    width: 90%; max-width: 600px;
-    height: 80px;
-    border: none; border-radius: 10px;
-    padding: 10px; margin-top: 10px;
-    font-size: 16px;
-  }
-  button {
-    margin: 10px; padding: 10px 20px;
-    border: none; border-radius: 8px;
-    background: #ff0080; color: #fff;
-    font-weight: 600; cursor: pointer;
-  }
-  button:hover { background: #ff66a3; }
-  .post {
-    background: #111;
-    border-radius: 15px;
-    padding: 15px;
-    margin: 15px auto;
-    width: 90%; max-width: 600px;
-    box-shadow: 0 0 15px #ff0080;
-    text-align: left;
-  }
-</style>
-</head>
-
-<body>
-  <h1>🔥 CSM Blog Site 🔥</h1>
-  <div id="userName">👤 Guest (Viewing Mode)</div>
-  <button id="loginButton">Login with Google</button>
-  <button id="logoutButton" style="display:none;">Logout</button>
-
-  <textarea id="postInput" placeholder="Write something..."></textarea>
-  <br>
-  <button id="postButton">Post</button>
-
-  <div id="posts"></div>
 </body>
 </html>
