@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messenger Pro Chat v4</title>
+<title>Messenger Pro Chat v5</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -39,8 +39,8 @@
   /* 🔹 Message alignment */
   .message {
     display:flex;
-    align-items:flex-end;
-    margin:6px 0;
+    align-items:flex-start;
+    margin:10px 0;
   }
   .left {justify-content:flex-start;}
   .right {justify-content:flex-end;}
@@ -57,6 +57,7 @@
     padding:10px;
     border-radius:16px;
     word-wrap:break-word;
+    position:relative;
   }
 
   /* 🔹 Admin message (Right Side - Blue) */
@@ -77,11 +78,19 @@
   body.dark .admin .bubble {background:#0064d1;}
 
   .verified {
-    width:14px;
-    height:14px;
+    width:16px;
+    height:16px;
     margin-left:4px;
     vertical-align:middle;
     border-radius:50%;
+  }
+
+  .name {
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:4px;
+    display:flex;
+    align-items:center;
   }
 
   .seen-status {
@@ -135,6 +144,7 @@
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
+  // 🔥 তোমার Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAeC_qcXhUeXBeGDSPr-ODJMWnG8ykD5B4",
     authDomain: "csm-bolg-site.firebaseapp.com",
@@ -150,6 +160,7 @@
   const provider = new GoogleAuthProvider();
 
   const ADMIN_EMAIL = "csmmohasinalam@gmail.com";
+  const ADMIN_NAME = "CSM Mohasin Alam";
   const VERIFIED_BADGE = "https://dl8.wapkizfile.info/download/c4275ed00b49e8d2f586ffbd4dc6c25f/csm-mohasin-alam+wapkizs+com/2-jpg-(csm-mohasin-alam.wapkizs.com).jpg";
 
   const chatBox = document.getElementById("chatBox");
@@ -163,13 +174,13 @@
     toggleMode.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
   };
 
-  // 👤 Login system
+  // 👤 Login
   onAuthStateChanged(auth, async user => {
     if (!user) await signInWithPopup(auth, provider);
     else loadMessages(user);
   });
 
-  // ✉️ Send message
+  // ✉️ Send Message
   sendBtn.onclick = () => {
     if (input.value.trim()) {
       sendMessage(input.value);
@@ -181,7 +192,7 @@
     const user = auth.currentUser;
     if (!user) return;
     await addDoc(collection(db, "messages"), {
-      name: user.displayName,
+      name: user.email === ADMIN_EMAIL ? ADMIN_NAME : user.displayName,
       email: user.email,
       content,
       time: serverTimestamp()
@@ -195,17 +206,11 @@
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const isAdmin = data.email === ADMIN_EMAIL;
-        const isMine = data.email === user.email;
 
         const msgDiv = document.createElement("div");
         msgDiv.classList.add("message");
-
-        // Admin → Right Side | User → Left Side
-        if (isAdmin) {
-          msgDiv.classList.add("admin", "right");
-        } else {
-          msgDiv.classList.add("user", "left");
-        }
+        msgDiv.classList.add(isAdmin ? "admin" : "user");
+        msgDiv.classList.add(isAdmin ? "right" : "left");
 
         const profile = document.createElement("img");
         profile.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -213,13 +218,21 @@
 
         const bubble = document.createElement("div");
         bubble.className = "bubble";
-        bubble.textContent = data.content;
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "name";
+        nameDiv.textContent = data.name;
 
         if (isAdmin) {
-          bubble.innerHTML += ` <img src="${VERIFIED_BADGE}" class="verified">`;
+          const badge = document.createElement("img");
+          badge.src = VERIFIED_BADGE;
+          badge.className = "verified";
+          nameDiv.appendChild(badge);
         }
 
-        // Layout: left = profile first, right = bubble first
+        bubble.appendChild(nameDiv);
+        bubble.innerHTML += `<div>${data.content}</div>`;
+
         if (isAdmin) {
           msgDiv.appendChild(bubble);
           msgDiv.appendChild(profile);
